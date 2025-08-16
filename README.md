@@ -5,7 +5,7 @@
 
 Shell скрипт для настройки sing-box на использование TProxy и FakeIP на роутере с OpenWrt.
 
-Текущая версия скрипта настраивает sing-box версии `1.11.x`.
+Текущая версия скрипта настраивает sing-box версии `1.12.x`.
 
 ## Установка
 
@@ -33,7 +33,7 @@ service sing-box restart
 
 Shell script to configure sing-box to use TProxy and FakeIP on OpenWrt router.
 
-The current version of the script configures sing-box version `1.11.x`.
+The current version of the script configures sing-box version `1.12.x`.
 
 ## Installation
 
