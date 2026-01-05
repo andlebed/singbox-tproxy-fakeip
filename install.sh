@@ -135,6 +135,15 @@ chain tproxy_output {
   ip daddr != $FAKEIP return
   meta l4proto $TPROXY_L4PROTO meta mark set $TPROXY_MARK
 }
+
+configure_br_netfilter() {
+  config_path="/etc/sysctl.d/99-disable-br-netfilter.conf"
+  if [ ! -f "$config_path" ]; then
+    log_message "INFO" "Creating br-netfilter config"
+    cat <<'EOF' >"$config_path"
+net.bridge.bridge-nf-call-iptables=0
+net.bridge.bridge-nf-call-ip6tables=0
+net.bridge.bridge-nf-call-arptables=0
 EOF
   fi
 }
@@ -264,10 +273,12 @@ main() {
   configure_dhcp
   configure_network
   configure_nftables
+  configure_br_netfilter
   configure_sing_box
   restart_service "network"
   restart_service "dnsmasq"
   restart_service "firewall"
+  restart_service "sysctl"
   print_post_install_message
 }
 
