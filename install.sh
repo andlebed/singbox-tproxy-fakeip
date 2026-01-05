@@ -113,27 +113,22 @@ EOI
 }
 
 configure_nftables() {
-  config_path="/etc/nftables.d/30-tproxy-fakeip.nft"
+  config_path="/etc/nftables.d/30-singbox-tproxy.nft"
   if [ ! -f "$config_path" ]; then
     log_message "INFO" "Creating nftables config"
     cat <<'EOF' >"$config_path"
 define TPROXY_MARK = 0x1
 define TPROXY_L4PROTO = { tcp, udp }
 define TPROXY_PORT = 4444
-define FAKEIP = { 198.18.0.0/15 }
+define RESERVED_IP = { 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 224.0.0.0/4 }
 
-chain tproxy_prerouting {
+chain singbox_prerouting {
   type filter hook prerouting priority mangle; policy accept;
-  meta nfproto ipv6 return
-  ip daddr != $FAKEIP return
-  meta l4proto $TPROXY_L4PROTO tproxy to :$TPROXY_PORT meta mark set $TPROXY_MARK accept
+  iifname "br-lan" ip daddr $RESERVED_IP return
+  iifname "br-lan" meta l4proto $TPROXY_L4PROTO tproxy to :$TPROXY_PORT meta mark set $TPROXY_MARK accept
 }
-
-chain tproxy_output {
-  type route hook output priority mangle; policy accept;
-  meta nfproto ipv6 return
-  ip daddr != $FAKEIP return
-  meta l4proto $TPROXY_L4PROTO meta mark set $TPROXY_MARK
+EOF
+  fi
 }
 
 configure_br_netfilter() {
