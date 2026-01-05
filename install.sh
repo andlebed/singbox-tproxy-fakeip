@@ -151,7 +151,7 @@ restart_service() {
 
 configure_sing_box() {
   config_path="/etc/sing-box/config.json"
-  if ! grep -q "fakeip" "$config_path"; then
+  if ! grep -q "tproxy" "$config_path"; then
     log_message "INFO" "Configuring sing-box"
     cat <<'EOF' >"$config_path"
 {
@@ -171,7 +171,8 @@ configure_sing_box() {
       {
         "tag": "cloudflare-doh-server",
         "type": "https",
-        "server": "1.1.1.1"
+        "server": "1.1.1.1",
+        "detour": "proxy-out"
       },
       {
         "tag": "local-server",
@@ -181,12 +182,30 @@ configure_sing_box() {
         "tag": "fakeip-server",
         "type": "fakeip",
         "inet4_range": "198.18.0.0/15"
+      },
+      {
+        "tag": "block-server",
+        "address": "rcode://refused"
       }
     ],
     "rules": [
       {
-        "domain_suffix": ["ifconfig.me"],
-        "server": "fakeip-server"
+        "rules": [
+          {
+            "rule_set": [
+              "geosite:openai",
+              "geosite:youtube",
+              "geosite:jetbrains",
+              "geosite:telegram",
+              "geosite:whatsapp"
+            ]
+          }
+        ],
+        "server": "fakeip-server",
+        "disable_cache": false,
+        "type": "logical",
+        "mode": "or",
+        "rewrite_ttl": 10
       }
     ]
   },
@@ -208,32 +227,29 @@ configure_sing_box() {
   ],
   "outbounds": [
     {
+      "tag": "block-out",
+      "type": "block"
+    },
+    {
       "tag": "direct-out",
       "type": "direct"
     },
     {
-      "tag": "vless-out",
-      "type": "vless",
+      "tag": "proxy-out",
+      "type": "shadowsocks",
       "server": "$SERVER",
-      "server_port": 443,
-      "uuid": "$UUID",
-      "flow": "$FLOW",
-      "tls": {
-        "enabled": true,
-        "server_name": "$FAKE_SERVER",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "$FINGERPRINT"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "$PUBLIC_KEY",
-          "short_id": "$SHORT_ID"
-        }
+      "server_port": $SERVER_PORT,
+      "method": "$METHOD",
+      "password": "$PASSWORD",
+      "domain_resolver": {
+        "server": "cloudflare-doh-server",
+        "rewrite_ttl": 43200,
+        "strategy": "prefer_ipv4"
       }
     }
   ],
   "route": {
+    "final": "direct-out",
     "auto_detect_interface": true,
     "default_domain_resolver": {
       "server": "local-server"
@@ -248,8 +264,93 @@ configure_sing_box() {
         "action": "hijack-dns"
       },
       {
-        "domain_suffix": ["ifconfig.me"],
-        "outbound": "vless-out"
+        "protocol": "quic",
+        "outbound": "block-out"
+      },
+      {
+        "rules": [
+          {
+            "rule_set": [
+              "geosite:youtube",
+              "geosite:jetbrains",
+              "geoip:openai",
+              "geosite:openai",
+              "geosite:telegram",
+              "geoip:telegram",
+              "geosite:whatsapp",
+              "ruleset:whatsapp"
+            ]
+          }
+        ],
+        "outbound": "proxy-out",
+        "type": "logical",
+        "mode": "or"
+      }
+    ],
+    "rule_set": [
+      {
+        "tag": "geoip:openai",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://github.com/KaringX/karing-ruleset/raw/sing/geo/geoip/openai.srs",
+        "download_detour": "proxy-out",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "geosite:openai",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://github.com/KaringX/karing-ruleset/raw/sing/geo/geosite/openai.srs",
+        "download_detour": "proxy-out",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "geosite:youtube",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://github.com/KaringX/karing-ruleset/raw/sing/geo/geosite/youtube.srs",
+        "download_detour": "proxy-out",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "geosite:jetbrains",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://github.com/KaringX/karing-ruleset/raw/sing/geo/geosite/jetbrains.srs",
+        "download_detour": "proxy-out",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "geosite:telegram",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://github.com/KaringX/karing-ruleset/raw/sing/geo/geosite/telegram.srs",
+        "download_detour": "proxy-out",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "geoip:telegram",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://github.com/KaringX/karing-ruleset/raw/sing/geo/geoip/telegram.srs",
+        "download_detour": "proxy-out",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "geosite:whatsapp",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://github.com/KaringX/karing-ruleset/raw/sing/geo/geosite/whatsapp.srs",
+        "download_detour": "proxy-out",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "ruleset:whatsapp",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://github.com/KaringX/karing-ruleset/raw/sing/ACL4SSR/Ruleset/Whatsapp.srs",
+        "download_detour": "proxy-out",
+        "update_interval": "24h"
       }
     ]
   }
