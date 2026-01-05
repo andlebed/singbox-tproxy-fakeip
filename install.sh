@@ -59,7 +59,7 @@ configure_dhcp() {
   is_filter_aaaa_enabled=$(uci -q get dhcp.@dnsmasq[0].filter_aaaa || echo "0")
   is_locause_disabled=$(uci -q get dhcp.@dnsmasq[0].localuse || echo "1")
   dhcp_server=$(uci -q get dhcp.@dnsmasq[0].server || echo "")
-  dhcp_server_ip="127.0.0.1#5353"
+  dhcp_server_ip="127.0.0.1#53530"
 
   if [ "$is_noresolv_enabled" -ne "1" ]; then
     log_message "INFO" "Enabling noresolv option in DHCP config"
@@ -208,7 +208,7 @@ configure_sing_box() {
       "tag": "dns-in",
       "type": "direct",
       "listen": "127.0.0.1",
-      "listen_port": 5353
+      "listen_port": 53530
     }
   ],
   "outbounds": [
