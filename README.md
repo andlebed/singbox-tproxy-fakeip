@@ -10,7 +10,7 @@ Shell скрипт для настройки sing-box на использова�
 ## Установка
 
 ```bash
-sh <(wget -O - https://github.com/vernette/singbox-tproxy-fakeip/raw/master/install.sh)
+sh <(wget -O - https://github.com/andlebed/singbox-tproxy-fakeip/raw/master/install.sh)
 ```
 
 > [!WARNING]
@@ -38,7 +38,7 @@ The current version of the script configures sing-box version `1.12.x`.
 ## Installation
 
 ```bash
-sh <(wget -O - https://github.com/vernette/singbox-tproxy-fakeip/raw/master/install.sh)
+sh <(wget -O - https://github.com/andlebed/singbox-tproxy-fakeip/raw/master/install.sh)
 ```
 
 > [!WARNING]
