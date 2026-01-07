@@ -120,10 +120,12 @@ configure_nftables() {
 define TPROXY_MARK = 0x1
 define TPROXY_L4PROTO = { tcp, udp }
 define TPROXY_PORT = 4444
-define RESERVED_IP = { 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 224.0.0.0/4 }
+define RESERVED_IP = { 0.0.0.0/8, 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 224.0.0.0/4, 255.255.255.255/32 }
 
 chain singbox_prerouting {
   type filter hook prerouting priority mangle; policy accept;
+  iifname "br-lan" udp dport {67,68} return
+  iifname "br-lan" udp sport {67,68} return
   iifname "br-lan" ip daddr $RESERVED_IP return
   iifname "br-lan" meta l4proto $TPROXY_L4PROTO tproxy to :$TPROXY_PORT meta mark set $TPROXY_MARK accept
 }
